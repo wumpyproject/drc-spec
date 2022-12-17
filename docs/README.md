@@ -24,6 +24,8 @@ and was subsequently improved and finalized together with
 ## Table of Contents
 
 * [1. Specification](./specification.md)
+  * [1.1 Versioning](./specification.md#11-versioning)
+  * [1.2 Key Format](./specification.md#12-key-format)
 
 * [2. Encodings](./encodings.md)
 

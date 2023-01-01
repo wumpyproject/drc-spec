@@ -26,6 +26,7 @@ and was subsequently improved and finalized together with
 * [1. Specification](./specification.md)
   * [1.1 Versioning](./specification.md#11-versioning)
   * [1.2 Key Format](./specification.md#12-key-format)
+  * [1.3 Expiry and TTL](./specification.md#13-expiry-and-ttl)
 
 * [2. Encodings](./encodings.md)
 

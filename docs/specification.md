@@ -52,3 +52,17 @@ necessary. That said it is RECOMMENDED that implementations provide a
 way to delete all keys with a specific version info after the update
 has fully rolled out. This could be done through a CLI command or
 provided function.
+
+## 1.3 Expiry and TTL
+
+The point of key expiry is ensuring that unused keys get cleaned up.
+This allows rolling updates without migrations as keys from previous
+versions automatically expire. This specification defines expiries for
+each key which implementations SHOULD follow. That said, the user MAY
+be provided a way to override these which SHOULD allow them to
+configure that no expiry is set for a key.
+
+Keys' TTL MAY be updated through the `EXPIRE` command at the discretion
+of each implementation however the value passed SHOULD be the one
+defined in this specification. If the user has explicitly overriden the
+expiries of keys, that should be the value passed to `EXPIRE`.

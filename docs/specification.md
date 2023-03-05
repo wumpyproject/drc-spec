@@ -28,14 +28,17 @@ a colon (`:`) is used as a delimiter.
 prefix:version:resource
 ```
 
-The prefix avoids collisions between implementations when used on the
-same Redis database which means that interoperability is explicitly
-opt-in by the user. Each key MUST have a prefix which SHALL NOT be an
+The prefix avoids collisions when used on the same Redis database which
+means that interoperability is explicitly opt-in between
+implementations. Each key MUST have a prefix which SHALL NOT be an
 empty string. The prefix MAY contain the delimiter character. The
 prefix MUST be configurable by the user.
 
 The prefix MAY be optional for the user, in which case it MUST default
-to a unique representative name of the implementation.
+to a unique representative name of the implementation. As a result,
+connecting the same implementation to the same Redis database without
+specifying a prefix makes it implicitly interoperable - as would
+presumably be expected.
 
 The version info contains the major version - prefixed by a `v` -
 followed by the encoding used (see [2. Encodings](./encodings.md)).

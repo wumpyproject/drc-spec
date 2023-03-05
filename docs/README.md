@@ -11,7 +11,7 @@ updated by RFC 8174.
 
 ## Authorship
 
-The first draft of this specification was created [Bluenix][Bluenix2]
+The first draft of this specification was created by [Bluenix][Bluenix2]
 and was subsequently improved and finalized together with
 [Sammy][SammyWhamy] and [Luke Stoodley][Luke-6723] with advice from
 [Simon Beal][muddyfish].

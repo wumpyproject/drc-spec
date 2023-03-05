@@ -67,5 +67,5 @@ configure that no expiry is set for a key.
 
 Keys' TTL MAY be updated through the `EXPIRE` command at the discretion
 of each implementation however the value passed SHOULD be the one
-defined in this specification. If the user has explicitly overriden the
-expiries of keys, that should be the value passed to `EXPIRE`.
+defined in this specification, or - if the user has overriden the
+value - the value provided by the user.

@@ -45,7 +45,7 @@ followed by the encoding used (see [2. Encodings](./encodings.md)).
 The version info MUST match the following regex:
 
 ```javascript
-/v(?<version>\d+)(?<encoding>[a-zA-Z]*)/
+/v(?<version>\d+)(?<encoding>[a-zA-Z_\+-]*)/
 ```
 
 Considering the version info is part of the key, the result is that

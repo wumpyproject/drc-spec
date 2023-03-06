@@ -69,3 +69,34 @@ Keys' TTL MAY be updated through the `EXPIRE` command at the discretion
 of each implementation however the value passed SHOULD be the one
 defined in this specification, or - if the user has overriden the
 value - the value provided by the user.
+
+## 1.4 Data Normalization
+
+To more efficiently use the memory available and ensure that objects do
+not become outdated, this specification normalizes the Discord data.
+
+Normalized data MUST have the nested object's key set to its ID
+(Discord snowflake). For example, the below codeblocks depict a JSON
+payload before- and after it has been normalized.
+
+```json
+{
+    "user": {
+        "id": "344404945359077377",
+        "username": "Bluenix",
+        "discriminator": "7543",
+        "avatar": null
+    },
+    "note": "This field is retained."
+}
+```
+
+```json
+{
+    "user": "344404945359077377",
+    "note": "This field is retained."
+}
+```
+
+The data MUST be normalized according to the rules written in each key,
+refer to [3. Key Reference](./key-reference.md) for more.

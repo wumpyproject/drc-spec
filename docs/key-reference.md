@@ -73,6 +73,69 @@ individual expiry times. If this were to be a hash, it would be
 continuously updated and the hashes for very active channels would
 grow infinitely.
 
+#### Normalization
+
+```lua
+local function normalize_message(message)
+    -- If this message was sent by a webhook, this is not a valid user
+    if not message.webhook_id then
+        redis.call('SET', ARGV[1] .. ':users:' .. message.author.id, cjson.encode(message.author))
+    end
+    message.author = message.author.id
+
+    if message.member then
+        message.member.user = nil
+        redis.call(
+            'HSET', ARGV[1] .. ':members:' .. message.guild_id,
+            message.author, cjson.encode(message.member)
+        )
+        message.member = nil
+    end
+
+    for i, mention in ipairs(message.mentions) then
+        if mention.member then
+            mention.member.user = nil
+            redis.call(
+                'HSET', ARGV[1] .. ':members:' .. message.guild_id,
+                mention.id, cjson.encode(mention.member)
+            )
+            mention.member = nil
+        end
+
+        redis.call('SET', ARGV[1] .. ':users:' .. mention.id, cjson.encode(mention))
+        message.mentions[i] = mention.id
+    end
+
+    -- Reactions can possibly be normalized here
+
+    if message.referenced_message then
+        normalize_message(message.referenced_message)
+        message.referenced_message = nil
+    end
+
+    if message.interaction then
+        redis.call('SET', ARGV[1] .. ':users:' .. message.interaction.user.id, cjson.encode(message.interaction.user))
+        message.interaction.user = message.interaction.user.id
+
+        if message.interaction.member then
+            message.interaction.member.user = nil
+            redis.call(
+                'HSET', ARGV[1] .. ':members:' .. message.guild_id,
+                message.interaction.user, cjson.encode(message.interaction.member)
+            )
+            message.interaction.member = nil
+        end
+    end
+
+    if message.thread then
+        redis.call('SET', ARGV[1] .. ':threads:' .. message.thread.id, cjson.encode(message.thread))
+        message.thread = nil
+    end
+end
+
+normalize_message(cjson.decode(ARGV[2]))
+```
+
 ### Threads
 
 * `drc:v1:threads:{thread.id}` (string)

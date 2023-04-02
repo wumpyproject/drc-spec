@@ -157,15 +157,6 @@ This has to be a string to allow per-member expiry.
 Hash of all integrations in a guild, mapping the integration ID to
 its normalized data.
 
-### Guild Bans
-
-* `drc:v1:bans:{guild.id}:{user.id}` (string)
-* TTL: ...
-
-String representing the ban reason for the particular user. This has
-to be a string to allow per-user expiry, otherwise the hash may grow
-infinitely large.
-
 ### Guild Welcome Screen
 
 * `drc:v1:welcome-screen:{guild.id}` (string)
@@ -179,6 +170,13 @@ String storing the normalized welcome screen object for its guild.
 * TTL: ...
 
 Hash of scheduled event IDs to its normalized data.
+
+### Guild Roles
+
+* `drc:v1:roles:{guild.id}` (hash)
+* TTL: ...
+
+Hash mapping role IDs to its role data.
 
 ### Guild Templates
 
@@ -208,6 +206,13 @@ stage channel.
 * TTL: ...
 
 Hash mapping custom stickers ID to its normalized sticker data.
+
+### Users
+
+* `drc:v1:users:{user.id}` (string)
+* TTL: ...
+
+String storing individual user data.
 
 ### Voice States
 

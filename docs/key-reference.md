@@ -31,6 +31,10 @@ objects which require their own expiry.
 
 Hash of *created* application command objects.
 
+#### Normalization
+
+Application commands have no normalization steps.
+
 ### Interactions
 
 * `drc:v1:interactions:{interaction.id}` (string)
@@ -45,6 +49,30 @@ due to each interaction needing to have its own expiry.
 * TTL: ...
 
 String storing the normalized application data.
+
+#### Normalization
+
+```lua
+local function normalize_application(application) then
+    if application.owner then
+        application.owner = normalize_user(application.owner)
+    end
+
+    if application.team then
+        for i, member in ipairs(message.team) then
+            if member.user then
+                member.user = normalize_user(member.user)
+            end
+        end
+    end
+
+    redis.call(
+        'SET', ARGV[1] .. ':applications:' .. application.id,
+        cjson.encode(application)
+    )
+    return application.id
+end
+```
 
 ### Auto Moderation Rules
 
@@ -76,64 +104,51 @@ grow infinitely.
 #### Normalization
 
 ```lua
-local function normalize_message(message)
+local function normalize_message(message) then
     -- If this message was sent by a webhook, this is not a valid user
     if not message.webhook_id then
-        redis.call('SET', ARGV[1] .. ':users:' .. message.author.id, cjson.encode(message.author))
+        normalize_user(message.author)
     end
     message.author = message.author.id
 
     if message.member then
-        message.member.user = nil
-        redis.call(
-            'HSET', ARGV[1] .. ':members:' .. message.guild_id,
-            message.author, cjson.encode(message.member)
-        )
+        normalize_member(message.member, message.author, message.guild_id)
         message.member = nil
     end
 
     for i, mention in ipairs(message.mentions) then
         if mention.member then
-            mention.member.user = nil
-            redis.call(
-                'HSET', ARGV[1] .. ':members:' .. message.guild_id,
-                mention.id, cjson.encode(mention.member)
-            )
+            normalize_member(mention.member, mention.id, message.guild_id)
             mention.member = nil
         end
 
-        redis.call('SET', ARGV[1] .. ':users:' .. mention.id, cjson.encode(mention))
-        message.mentions[i] = mention.id
+        message.mentions[i] = normalize_user(mention)
     end
 
     -- Reactions can possibly be normalized here
 
     if message.referenced_message then
-        normalize_message(message.referenced_message)
-        message.referenced_message = nil
+        message.referenced_message = normalize_message(message.referenced_message)
     end
 
     if message.interaction then
-        redis.call('SET', ARGV[1] .. ':users:' .. message.interaction.user.id, cjson.encode(message.interaction.user))
-        message.interaction.user = message.interaction.user.id
+        message.interaction.user = normalize_user(message.interaction.user)
 
         if message.interaction.member then
-            message.interaction.member.user = nil
-            redis.call(
-                'HSET', ARGV[1] .. ':members:' .. message.guild_id,
-                message.interaction.user, cjson.encode(message.interaction.member)
+            normalize_member(
+                message.interaction.member, message.interaction.user, message.guild_id
             )
             message.interaction.member = nil
         end
     end
 
     if message.thread then
-        redis.call('SET', ARGV[1] .. ':threads:' .. message.thread.id, cjson.encode(message.thread))
-        message.thread = nil
+        message.thread = normalize_thread(message.thread)
     end
-end
 
-normalize_message(cjson.decode(ARGV[2]))
+    redis.call('SET', ARGV[1] .. ':messages:' .. message.id, cjson.encode(message))
+    return message.id
+end
 ```
 
 ### Threads
@@ -144,12 +159,50 @@ normalize_message(cjson.decode(ARGV[2]))
 String for each thread, storing its normalized data. This has to be a
 string due to each thread's data needing its own expiry.
 
+#### Normalization
+
+```lua
+local function normalize_thread(thread) then
+    -- Threads and channels have a lot of data which quickly goes stale,
+    -- however this is already understood but kept in-case anyone wishes
+    -- to estimate based off of it. Could be removed for additional
+    -- performance gains
+
+    thread.member = normalize_thread_member(thread.member)
+
+    redis.call('SET', ARGV[1] .. ':threads:' .. thread.id, cjson.encode(thread))
+    return thread.id
+end
+```
+
 ### Thread Members
 
 * `drc:v1:thread-members:{thread.id}` (hash)
 * TTL: ...
 
 Hash of a thread member ID to its normalized data.
+
+#### Normalization
+
+```lua
+local function normalize_thread_member(thread_member, thread_id) then
+    if thread_member.id then
+        thread_id = thread_member.id
+    end
+
+    if thread_member.member then
+        -- If user_id is not set
+        thread_member.user_id = normalize_member(thread_member.member)
+        thread_member.member = nil
+    end
+
+    redis.call(
+        'HSET', ARGV[1] .. ':thread-members:' .. thread_id,
+        thread_member.cjson.encode(thread)
+    )
+    return nil
+end
+```
 
 ### Reactions
 
@@ -211,6 +264,32 @@ all users in a particular guild.
 
 String representing the normalized member data for the specific user.
 This has to be a string to allow per-member expiry.
+
+#### Normalization
+
+```lua
+local function normalize_member(member, user_id, guild_id) then
+    -- guild_id is an extra field present in some gateway events;
+    -- this makes the guild_id parameter optional
+    if member.guild_id then
+        guild_id = member.guild_id
+    end
+
+    if member.user then
+        -- In the event that user_id was not passed
+        user_id = member.user.id
+        normalize_user(user)
+        member.user = nil
+    end
+
+    redis.call('SADD', ARGV[1] .. ':members:' .. guild_id, user_id)
+    redis.call(
+        'SET', ARGV[1] .. ':members:' .. guild_id .. ':' .. user_id,
+        cjson.encode(member)
+    )
+    return user_id
+end
+```
 
 ### Guild Integrations
 
@@ -276,6 +355,15 @@ Hash mapping custom stickers ID to its normalized sticker data.
 * TTL: ...
 
 String storing individual user data.
+
+#### Normalization
+
+```lua
+local function normalize_user(user) then
+    redis.call('SET', ARGV[1] .. ':users:' .. user.id, cjson.encode(user))
+    return user.id
+end
+```
 
 ### Voice States
 
